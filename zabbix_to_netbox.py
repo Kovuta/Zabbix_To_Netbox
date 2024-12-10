@@ -23,14 +23,8 @@ def get_zabbix_hosts():
         "id": 1
     }
     
-    #payload_json = json.dumps(payload)
-    
     response = requests.post(z_URL, json=payload, headers=headers, verify=False)
-    
-    #print("URL is:", z_URL)
-    #print("Payload is (JSON):", payload_json)
-    #print("Code:", response.status_code)
-    
+
     if response.status_code == 200:
         try:
             hosts = response.json().get("result", [])
@@ -50,9 +44,19 @@ def get_zabbix_hosts():
         
         
 def parse_hostname(hostname):
+    # Check which hosts are causing issues or invalids
+    if not hostname:
+        print("Invalid Hostname:", hostname)
+        return None
+    
+    # Is device router or PTP? Skipping others for now
     router_pattern = r"^(?P<customer>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
     ptp_pattern = r"^(?P<customer>.+?) - (?P<link>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
     
+    
+    print("Parsing Hostname:", hostname)
+     
+    # Matching hostname to router
     router_match = re.match(router_pattern, hostname)
     if router_match:
         return {
@@ -61,23 +65,24 @@ def parse_hostname(hostname):
             "site": router_match.group("site"),
             "model": router_match.group("model")
         }
-        
-        ptp_match = re.match(ptp_pattern, hostname)
-        if ptp_match:
-            return {
-                "type": "ptp",
-                "customer": ptp_match.group("customer"),
-                "link": ptp_match.group("link"),
-                "site": ptp_match.group("site"),
-                "model": ptp_match.group("model")
+    
+    # Matching hostname to ptp radio
+    ptp_match = re.match(ptp_pattern, hostname)
+    if ptp_match:
+        return {
+            "type": "ptp",
+            "customer": ptp_match.group("customer"),
+            "link": ptp_match.group("link"),
+            "site": ptp_match.group("site"),
+            "model": ptp_match.group("model")
             }
         
-        return {
-            "type": "unknown",
-            "customer": "unknown",
-            "site": "unknown",
-            "model": "unknown",
-            "original_name": hostname
+    return {
+        "type": "unknown",
+        "customer": "unknown",
+        "site": "unknown",
+        "model": "unknown",
+        "original_name": hostname
         }
         
         
@@ -100,26 +105,31 @@ def fill_netbox(devices):
     }
     
     for device in devices:
-        parsed = parse_hostname(device["name"])
+        if device is None or "name" not in device or "ip" not in device:
+            print("Skipping invalid device:", device)
+            continue
+            
+        print(f"Processing device: {device['name']}, IP: {device['ip']}")
         
-        if parsed["type"] == "unknown":
-            parsed = handle_unknown(device)
+        parsed = parse_hostname(device["name"])
+        if not parsed or parsed["type"] == "unknown":
+            print(f"Skipping device due to invalid parsed data: {device['name']}")
+            continue # We are skipping outliers ( can add manually )
+        
+        print(f"Processing parsed device: {parsed}")
             
         device_data = {
             "name": device["name"],
-            "device_role": parsed.get("type", "unknown"),
-            "device_type": parsed.get("model", "unknown"),
-            "site": parsed.get("site", "unknown"),
-            "status": "active"
+            "device_type": parsed["model"],
+            "tenant": parsed["customer"],
+            "site": parsed["site"],
+            "primary_ip4": device["ip"]
         }
-        
-        if parsed["type"] == "ptp":
-            device_data["custom_field_link_number"] = parsed.get("link", "unknown")
             
         response = requests.post(f"{net_URL}dcim/devices/", headers=headers, json=device_data)
         
         if response.status_code == 201:
-            print(f"Added: {device['name']} ({device['ip']})")
+            print(f"Successfully Added: {device['name']} ({device['ip']})")
         elif response.status_code == 400:
             print(f"Already exists or error: {device['name']} ({device['ip']})")
             print(f"Error Reason: {response.text}")
@@ -134,13 +144,19 @@ def main():
         parsed_hosts = []
         for host in zabbix_hosts:
             parsed_data = parse_hostname(host["name"])
-            parsed_hosts.append(parsed_data)
+            if "name" in host and "ip" in host:
+                print("Adding host:", host)
+                parsed_hosts.append({"name": host["name"], "ip":host["ip"]})
+            else:
+                print("Skipping host due to missing keys:", host)
             
         print(f"Found {len(parsed_hosts)} hosts. Sending to NetBox...")
         fill_netbox(parsed_hosts)
     else:
         print("No hosts found or an error occurred.")
         
+        
+    print("Migration Complete.")
 
 if __name__ == "__main__":
     main()
