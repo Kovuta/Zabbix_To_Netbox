@@ -13,10 +13,17 @@ headers = {"Authorization": f"Token {net_token}"}
 
 def get_mapping(path, key_field, value_field):
     url = f"{net_url}{path}"
+    mapping = {}
     response = requests.get(url, headers=headers)
     response.raise_for_status()
     data = response.json()["results"]
-    print("Data fetched from NetBox:", data)
+    for item in data:
+        if not item.get(key_field) or not item.get(value_field):
+            print(f"Skipping invalid item: {item}")
+            continue
+        mapping[item[key_field]] = item[value_field]
+
+    
     mapping = {item[key_field]: item[value_field] for item in data}
     return mapping
 
