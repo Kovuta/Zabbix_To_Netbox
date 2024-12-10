@@ -1,17 +1,22 @@
 import requests
 import json
 import re
+from dotenv import load_dotenv
+import os
 
-z_URL = "https://172.31.69.12/zabbix/api_jsonrpc.php"
-z_token = "22c05403161e726b36da2dfaaeeb3b783758c1a8161aa2ec69150fca39b06327"
+# Load environment
+load_dotenv("zab_net_tokens.env")
 
-net_URL = "http://172.31.69.20:8000/api/"
-net_token = "0123456789abcdef0123456789abcdef01234567"
+net_URL = os.getenv("NETBOX_URL")
+net_TOKEN = os.getenv("NETBOX_TOKEN")
+
+zabbix_URL = os.getenv("ZABBIX_URL")
+zabbix_TOKEN = os.getenv("ZABBIX_TOKEN")
 
 def get_zabbix_hosts():
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {z_token}"
+        "Authorization": f"Bearer {zabbix_TOKEN}"
     }
     payload = {
         "jsonrpc": "2.0",
@@ -23,7 +28,7 @@ def get_zabbix_hosts():
         "id": 1
     }
     
-    response = requests.post(z_URL, json=payload, headers=headers, verify=False)
+    response = requests.post(zabbix_URL, json=payload, headers=headers, verify=False)
 
     if response.status_code == 200:
         try:
@@ -100,7 +105,7 @@ def handle_unknown(host):
 
 def fill_netbox(devices):
     headers = {
-        "Authorization": f"Token {net_token}",
+        "Authorization": f"Token {net_TOKEN}",
         "Content-Type": "application/json"
     }
     
