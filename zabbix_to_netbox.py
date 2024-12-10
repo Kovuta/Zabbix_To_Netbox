@@ -4,14 +4,29 @@ import re
 from dotenv import load_dotenv
 import os
 import subprocess
+import sys
 
 # Run dynamic mapper!
-subprocess.run(["python", "dynamic_mapping.py"], check=True)
+subprocess.run([sys.executable, "dynamic_mapping.py"], check=True) # sys.executable is for fixing python path issues
 with open("mappings.json", "r") as f:
     mappings = json.load(f)
     
+device_type_mapping = mappings.get("device_type_mapping", {})
+site_mapping = mappings.get("site_mapping", {})
+tenant_mapping = mappings.get("tenant_mapping", {})
+
+# Load environment
+load_dotenv("zab_net_tokens.env")
+
+net_URL = os.getenv("NETBOX_URL")
+net_TOKEN = os.getenv("NETBOX_TOKEN")
+
+zabbix_URL = os.getenv("ZABBIX_URL")
+zabbix_TOKEN = os.getenv("ZABBIX_TOKEN")
+
+
 def create_device(device):
-    device_type_id = device_type_mapping.get(["model"])
+    device_type_id = device_type_mapping.get(device["model"])
     site_id = site_mapping.get(device["site"])
     tenant_id = tenant_mapping.get(device["tenant"])
     
@@ -40,16 +55,11 @@ def create_device(device):
         print(f"Already exists or error: {device['name']} ({device['ip']})")
         print(f"Error Reason: {response.text}")
     else:
-        print(f"Failed to add {device['name']} - {response.status_code}")
+        print(f"Failed to add {device['name']} - {response.status_code}: {response.text}")
+        
+        
+    return payload
 
-# Load environment
-load_dotenv("zab_net_tokens.env")
-
-net_URL = os.getenv("NETBOX_URL")
-net_TOKEN = os.getenv("NETBOX_TOKEN")
-
-zabbix_URL = os.getenv("ZABBIX_URL")
-zabbix_TOKEN = os.getenv("ZABBIX_TOKEN")
 
 def get_zabbix_hosts():
     headers = {
@@ -95,7 +105,6 @@ def parse_hostname(hostname):
     # Is device router or PTP? Skipping others for now
     router_pattern = r"^(?P<customer>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
     ptp_pattern = r"^(?P<customer>.+?) - (?P<link>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
-    
     
     print("Parsing Hostname:", hostname)
      
