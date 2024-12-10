@@ -37,7 +37,7 @@ def create_device(device):
         print(f"Site not found: {device['site']}")
         return
     if not tenant_id:
-        print(f"Customer not found: {device['tenant']}")
+        print(f"tenant not found: {device['tenant']}")
         return
         
     payload = {
@@ -103,8 +103,8 @@ def parse_hostname(hostname):
         return None
     
     # Is device router or PTP? Skipping others for now
-    router_pattern = r"^(?P<customer>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
-    ptp_pattern = r"^(?P<customer>.+?) - (?P<link>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
+    router_pattern = r"^(?P<tenant>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
+    ptp_pattern = r"^(?P<tenant>.+?) - (?P<link>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
     
     print("Parsing Hostname:", hostname)
      
@@ -113,7 +113,7 @@ def parse_hostname(hostname):
     if router_match:
         return {
             "type": "router",
-            "customer": router_match.group("customer"),
+            "tenant": router_match.group("tenant"),
             "site": router_match.group("site"),
             "model": router_match.group("model")
         }
@@ -123,7 +123,7 @@ def parse_hostname(hostname):
     if ptp_match:
         return {
             "type": "ptp",
-            "customer": ptp_match.group("customer"),
+            "tenant": ptp_match.group("tenant"),
             "link": ptp_match.group("link"),
             "site": ptp_match.group("site"),
             "model": ptp_match.group("model")
@@ -131,7 +131,7 @@ def parse_hostname(hostname):
         
     return {
         "type": "unknown",
-        "customer": "unknown",
+        "tenant": "unknown",
         "site": "unknown",
         "model": "unknown",
         "original_name": hostname
@@ -142,7 +142,7 @@ def handle_unknown(host):
     print(f"Unknown format for host: {host['name']}")
     return {
         "type": "unknown",
-        "customer": "unknown",
+        "tenant": "unknown",
         "site": "unknown",
         "model": "unknown",
         "original_name": host["name"],
