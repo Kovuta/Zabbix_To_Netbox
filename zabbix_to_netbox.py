@@ -40,25 +40,19 @@ def create_device(device):
         print(f"tenant not found: {device['tenant']}")
         return
         
-    payload = {
+        
+    print("Creating device with data:", device)
+    """payload = {
             "name": device["name"],
             "device_type": device_type_id,
             "tenant": tenant_id,
             "site": site_id,
             "primary_ip4": device["ip"]
         }
-    
-    response = requests.post(f"{net_URL}dcim/devices/", headers=headers, json=payload)
-    if response.status_code == 201:
-        print(f"Successfully Added: {device['name']} ({device['ip']})")
-    elif response.status_code == 400:
-        print(f"Already exists or error: {device['name']} ({device['ip']})")
-        print(f"Error Reason: {response.text}")
-    else:
-        print(f"Failed to add {device['name']} - {response.status_code}: {response.text}")
+    """
         
         
-    return payload
+    #return payload
 
 
 def get_zabbix_hosts():
@@ -106,7 +100,7 @@ def parse_hostname(hostname):
     router_pattern = r"^(?P<tenant>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
     ptp_pattern = r"^(?P<tenant>.+?) - (?P<link>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
     
-    print("Parsing Hostname:", hostname)
+    #print("Parsing Hostname:", hostname)
      
     # Matching hostname to router
     router_match = re.match(router_pattern, hostname)
@@ -161,14 +155,14 @@ def fill_netbox(devices):
             print("Skipping invalid device:", device)
             continue
             
-        print(f"Processing device: {device['name']}, IP: {device['ip']}")
+        #print(f"Processing device: {device['name']}, IP: {device['ip']}")
         
         parsed = parse_hostname(device["name"])
         if not parsed or parsed["type"] == "unknown":
             print(f"Skipping device due to invalid parsed data: {device['name']}")
             continue # We are skipping outliers ( can add manually )
         
-        print(f"Processing parsed device: {parsed}")
+        #print(f"Processing parsed device: {parsed}")
             
         create_device(parsed)
 
@@ -187,6 +181,7 @@ def main():
                 print("Skipping host due to missing keys:", host)
             
         print(f"Found {len(parsed_hosts)} hosts. Sending to NetBox...")
+        print("Pared Hosts before fill_netbox:", parsed_hosts)
         fill_netbox(parsed_hosts)
     else:
         print("No hosts found or an error occurred.")
