@@ -21,11 +21,12 @@ def get_mapping(path, key_field, value_field):
 
 # Calling API to grab proper mappings
 mappings = {
-    "device_type_mapping": fetch_mapping("dcim/device-types/", "model", "id"),
-    "site_mapping": fetch_mapping("dcim/sites/", "name", "id"),
-    "tenant_mapping": fetch_mapping("tenancy/tenants/", "name", "id")
+    "device_type_mapping": get_mapping("dcim/device-types/", "model", "id"),
+    "site_mapping": get_mapping("dcim/sites/", "name", "id"),
+    "tenant_mapping": get_mapping("tenancy/tenants/", "name", "id")
 }
 
+# Create a json file of the mappings for easy parsing
 with open("mappings.json", "w") as f:
     json.dump(mappings, f, indent=4)
 print("Mappings have been saved to mappings.json")
