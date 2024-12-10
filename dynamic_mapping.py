@@ -14,17 +14,38 @@ headers = {"Authorization": f"Token {net_token}"}
 def get_mapping(path, key_field, value_field):
     url = f"{net_url}{path}"
     mapping = {}
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    data = response.json()["results"]
-    for item in data:
-        if not item.get(key_field) or not item.get(value_field):
-            print(f"Skipping invalid item: {item}")
-            continue
-        mapping[item[key_field]] = item[value_field]
-
     
-    mapping = {item[key_field]: item[value_field] for item in data}
+    while url:
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        data = response.json()
+        
+        if isinstance(data, dict):
+            results = data.get("results", [])
+        elif isinstance(data, list):
+            results = data
+        else:
+            print(f"Unexpected data format: {data}")
+            break
+        
+        if not results:
+            print(f"No results found for {path}")
+            break
+            
+        for item in results:
+            print(f"Processing item: {item}")
+            if not item.get(key_field):
+                print(f"Missing key_field '{key_field}' in item: {item}")
+                continue
+            if not item.get(value_field):
+                print(f"Missing value_field '{value_field}' in item: {item}")
+                continue
+            mapping[item[key_field]] = item[value_field]
+        if isinstance(data, dict):
+            url = data.get("next") # Some pagination stuff
+        else:
+            url = none # no pagination
+
     return mapping
 
 # Calling API to grab proper mappings

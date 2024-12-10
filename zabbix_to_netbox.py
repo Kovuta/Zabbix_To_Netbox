@@ -3,6 +3,44 @@ import json
 import re
 from dotenv import load_dotenv
 import os
+import subprocess
+
+# Run dynamic mapper!
+subprocess.run(["python", "dynamic_mapping.py"], check=True)
+with open("mappings.json", "r") as f:
+    mappings = json.load(f)
+    
+def create_device(device):
+    device_type_id = device_type_mapping.get(["model"])
+    site_id = site_mapping.get(device["site"])
+    tenant_id = tenant_mapping.get(device["tenant"])
+    
+    if not device_type_id:
+        print(f"Device type not found for model: {device['model']}")
+        return
+    if not site_id:
+        print(f"Site not found: {device['site']}")
+        return
+    if not tenant_id:
+        print(f"Customer not found: {device['tenant']}")
+        return
+        
+    payload = {
+            "name": device["name"],
+            "device_type": device_type_id,
+            "tenant": tenant_id,
+            "site": site_id,
+            "primary_ip4": device["ip"]
+        }
+    
+    response = requests.post(f"{net_URL}dcim/devices/", headers=headers, json=payload)
+    if response.status_code == 201:
+        print(f"Successfully Added: {device['name']} ({device['ip']})")
+    elif response.status_code == 400:
+        print(f"Already exists or error: {device['name']} ({device['ip']})")
+        print(f"Error Reason: {response.text}")
+    else:
+        print(f"Failed to add {device['name']} - {response.status_code}")
 
 # Load environment
 load_dotenv("zab_net_tokens.env")
@@ -40,7 +78,7 @@ def get_zabbix_hosts():
                     if ip:
                         parsed_hosts.append({"name": host["host"], "ip": ip})
             return parsed_hosts
-        except exception as e:
+        except Exception as e:
             print(f"Error Parsing Response: {e}")
     else:
         print(f"Error fetching Zabbix hosts: {response.text}")
@@ -123,23 +161,7 @@ def fill_netbox(devices):
         
         print(f"Processing parsed device: {parsed}")
             
-        device_data = {
-            "name": device["name"],
-            "device_type": parsed["model"],
-            "tenant": parsed["customer"],
-            "site": parsed["site"],
-            "primary_ip4": device["ip"]
-        }
-            
-        response = requests.post(f"{net_URL}dcim/devices/", headers=headers, json=device_data)
-        
-        if response.status_code == 201:
-            print(f"Successfully Added: {device['name']} ({device['ip']})")
-        elif response.status_code == 400:
-            print(f"Already exists or error: {device['name']} ({device['ip']})")
-            print(f"Error Reason: {response.text}")
-        else:
-            print(f"Failed to add {device['name']} - {response.status_code}")
+        create_device(parsed)
 
 
 def main():
