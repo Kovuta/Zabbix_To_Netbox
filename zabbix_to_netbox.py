@@ -41,7 +41,7 @@ def create_device(device):
         return
         
         
-    print("Creating device with data:", device)
+    #print("Creating device with data:", device)
     """payload = {
             "name": device["name"],
             "device_type": device_type_id,
@@ -97,19 +97,20 @@ def parse_hostname(hostname):
         return None
     
     # Is device router or PTP? Skipping others for now
-    router_pattern = r"^(?P<tenant>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
     ptp_pattern = r"^(?P<tenant>.+?) - (?P<link>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
+    router_pattern = r"^(?P<tenant>.+?) - (?P<site>.+?) - (?P<model>.+?)$"
     
     #print("Parsing Hostname:", hostname)
      
     # Matching hostname to ptp radio
     ptp_match = re.match(ptp_pattern, hostname)
     if ptp_match:
+        site = ptp_match.group("site").split(" TO ")[0].strip()
         return {
             "type": "ptp",
             "tenant": ptp_match.group("tenant"),
             "link": ptp_match.group("link"),
-            "site": ptp_match.group("site"),
+            "site": site,
             "model": ptp_match.group("model")
             }
      
