@@ -102,16 +102,6 @@ def parse_hostname(hostname):
     
     #print("Parsing Hostname:", hostname)
      
-    # Matching hostname to router
-    router_match = re.match(router_pattern, hostname)
-    if router_match:
-        return {
-            "type": "router",
-            "tenant": router_match.group("tenant"),
-            "site": router_match.group("site"),
-            "model": router_match.group("model")
-        }
-    
     # Matching hostname to ptp radio
     ptp_match = re.match(ptp_pattern, hostname)
     if ptp_match:
@@ -122,6 +112,17 @@ def parse_hostname(hostname):
             "site": ptp_match.group("site"),
             "model": ptp_match.group("model")
             }
+     
+     
+    # Matching hostname to router
+    router_match = re.match(router_pattern, hostname)
+    if router_match:
+        return {
+            "type": "router",
+            "tenant": router_match.group("tenant"),
+            "site": router_match.group("site"),
+            "model": router_match.group("model")
+        }
         
     return {
         "type": "unknown",
@@ -175,13 +176,12 @@ def main():
         for host in zabbix_hosts:
             parsed_data = parse_hostname(host["name"])
             if "name" in host and "ip" in host:
-                print("Adding host:", host)
+                #print("Adding host:", host)
                 parsed_hosts.append({"name": host["name"], "ip":host["ip"]})
             else:
                 print("Skipping host due to missing keys:", host)
             
         print(f"Found {len(parsed_hosts)} hosts. Sending to NetBox...")
-        print("Pared Hosts before fill_netbox:", parsed_hosts)
         fill_netbox(parsed_hosts)
     else:
         print("No hosts found or an error occurred.")

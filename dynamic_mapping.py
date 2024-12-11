@@ -33,7 +33,6 @@ def get_mapping(path, key_field, value_field):
             break
             
         for item in results:
-            print(f"Processing item: {item}")
             if not item.get(key_field):
                 print(f"Missing key_field '{key_field}' in item: {item}")
                 continue
