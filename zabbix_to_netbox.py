@@ -7,7 +7,12 @@ import subprocess
 import sys
 
 # Run dynamic mapper!
-subprocess.run([sys.executable, "dynamic_mapping.py"], check=True) # sys.executable is for fixing python path issues
+try:
+    subprocess.run([sys.executable, "dynamic_mapping.py"], check=True) # sys.executable is for fixing python path issues
+except subprocess.CalledProcessError as subpro_e:
+    print(f"Error executing dynamic mapper: {subpro_e}")
+    return
+
 with open("mappings.json", "r") as f:
     mappings = json.load(f)
 
