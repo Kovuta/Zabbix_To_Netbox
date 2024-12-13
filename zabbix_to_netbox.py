@@ -10,7 +10,7 @@ import sys
 subprocess.run([sys.executable, "dynamic_mapping.py"], check=True) # sys.executable is for fixing python path issues
 with open("mappings.json", "r") as f:
     mappings = json.load(f)
-    
+
 device_type_mapping = mappings.get("device_type_mapping", {})
 site_mapping = mappings.get("site_mapping", {})
 tenant_mapping = mappings.get("tenant_mapping", {})
@@ -42,14 +42,13 @@ def create_device(device):
         
         
     #print("Creating device with data:", device)
-    """payload = {
+    payload = {
             "name": device["name"],
             "device_type": device_type_id,
             "tenant": tenant_id,
             "site": site_id,
             "primary_ip4": device["ip"]
         }
-    """
         
         
     #return payload
